@@ -11,7 +11,7 @@ var y = d3.scale.sqrt()
 var color = d3.scale.category20();
 
 var colorByApp = function(d) {
-    return d.children ? utilColor(d) : color(d.name.split("--")[1]);
+    return d.children ? utilColor(d) : color(d.name);
 };
 
 var colorByEnv = function(d) {

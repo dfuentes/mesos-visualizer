@@ -6,30 +6,25 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/Clever/mesos-visualizer/ecs"
+	"github.com/dfuentes/mesos-visualizer/ecs"
 )
 
 var (
-	Cluster            string
-	AWSAccessKeyID     string
-	AWSSecretAccessKey string
+	Cluster string
 )
 
 func init() {
 	Cluster = getEnv("CLUSTER")
-	AWSAccessKeyID = getEnv("AWS_ACCESS_KEY_ID")
-	AWSSecretAccessKey = getEnv("AWS_SECRET_ACCESS_KEY")
-
 }
 
 func main() {
 	http.HandleFunc("/resources.json", resourcesHandler)
 	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("./static"))))
-	log.Fatal(http.ListenAndServe(":80", nil))
+	log.Fatal(http.ListenAndServe(":3000", nil))
 }
 
 func resourcesHandler(w http.ResponseWriter, r *http.Request) {
-	c := ecs.NewClient(Cluster, AWSAccessKeyID, AWSSecretAccessKey)
+	c := ecs.NewClient(Cluster)
 	resourceGraph, err := c.GetResourceGraph()
 	if err != nil {
 		log.Fatal(err)

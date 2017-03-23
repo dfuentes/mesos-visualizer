@@ -2,7 +2,6 @@ package ecs
 
 import (
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecs"
 )
@@ -23,11 +22,10 @@ type Client struct {
 
 var taskDefinitionCache = map[string]*ecs.TaskDefinition{}
 
-func NewClient(cluster string, accessKeyID string, secretAccessKey string) *Client {
+func NewClient(cluster string) *Client {
 	awsConfig := &aws.Config{
-		Region:      aws.String("us-west-1"),
-		MaxRetries:  aws.Int(10),
-		Credentials: credentials.NewStaticCredentials(accessKeyID, secretAccessKey, ""),
+		Region:     aws.String("us-west-2"),
+		MaxRetries: aws.Int(10),
 	}
 	svc := ecs.New(session.New(), awsConfig)
 	return &Client{
@@ -119,38 +117,42 @@ func (c *Client) GetResourceGraph() (ResourceNode, error) {
 			return ResourceNode{}, err
 		}
 
-		describeTasksInput := &ecs.DescribeTasksInput{
-			Cluster: aws.String(clusterName),
-			Tasks:   taskARNs,
-		}
+		if len(taskARNs) > 0 {
 
-		tresp, err := c.client.DescribeTasks(describeTasksInput)
-		if err != nil {
-			return ResourceNode{}, err
-		}
-
-		for _, task := range tresp.Tasks {
-			td, ok := taskDefinitionCache[*task.TaskDefinitionArn]
-			if !ok {
-				describeTaskDefinitionInput := &ecs.DescribeTaskDefinitionInput{
-					TaskDefinition: task.TaskDefinitionArn,
-				}
-				resp, err := c.client.DescribeTaskDefinition(describeTaskDefinitionInput)
-				if err != nil {
-					return ResourceNode{}, err
-				}
-				td = resp.TaskDefinition
-				taskDefinitionCache[*task.TaskDefinitionArn] = td
+			describeTasksInput := &ecs.DescribeTasksInput{
+				Cluster: aws.String(clusterName),
+				Tasks:   taskARNs,
 			}
 
-			cd := td.ContainerDefinitions[0]
-
-			taskNode := ResourceNode{
-				Name:   *cd.Name,
-				Memory: float64(*cd.Memory),
-				CPU:    float64(*cd.Cpu),
+			tresp, err := c.client.DescribeTasks(describeTasksInput)
+			if err != nil {
+				return ResourceNode{}, err
 			}
-			slaveNode.Children = append(slaveNode.Children, taskNode)
+
+			for _, task := range tresp.Tasks {
+				td, ok := taskDefinitionCache[*task.TaskDefinitionArn]
+				if !ok {
+					describeTaskDefinitionInput := &ecs.DescribeTaskDefinitionInput{
+						TaskDefinition: task.TaskDefinitionArn,
+					}
+					resp, err := c.client.DescribeTaskDefinition(describeTaskDefinitionInput)
+					if err != nil {
+						return ResourceNode{}, err
+					}
+					td = resp.TaskDefinition
+					taskDefinitionCache[*task.TaskDefinitionArn] = td
+				}
+
+				cd := td.ContainerDefinitions[0]
+
+				taskNode := ResourceNode{
+					Name:   *cd.Name,
+					Memory: float64(*cd.Memory),
+					CPU:    float64(*cd.Cpu),
+				}
+				slaveNode.Children = append(slaveNode.Children, taskNode)
+			}
+
 		}
 		slaveUnused := ResourceNode{
 			Name:   "Unused",
