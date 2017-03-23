@@ -1,4 +1,4 @@
-package: github.com/Clever/mesos-visualizer
+package: github.com/dfuentes/mesos-visualizer
 import:
 - package: github.com/aws/aws-sdk-go
   subpackages:

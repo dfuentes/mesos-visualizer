@@ -3,7 +3,7 @@ include golang.mk
 
 .PHONY: all test build clean
 SHELL := /bin/bash
-PKG := github.com/Clever/mesos-visualizer
+PKG := github.com/dfuentes/mesos-visualizer
 PKGS := $(shell go list ./... | grep -v /vendor/)
 EXECUTABLE := $(shell basename $(PKG))
 $(eval $(call golang-version-check,1.7))
